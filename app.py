@@ -9,9 +9,13 @@ import faiss
 from sentence_transformers import SentenceTransformer
 import io
 import time
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Instrument with prometheus' instrumentator
+Instrumentator().instrument(app).expose(app)
 
 # Initialize sentence transformer model
 model = SentenceTransformer('all-MiniLM-L6-v2')

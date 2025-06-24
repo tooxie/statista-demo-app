@@ -5,3 +5,5 @@ numpy==1.26.3
 faiss-cpu==1.7.4
 sentence-transformers==2.5.1
 email-validator==2.1.0.post1
+
+prometheus-fastapi-instrumentator
