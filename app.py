@@ -36,10 +36,10 @@ def init_db():
 def load_data():
     with open('statistics.json', 'r') as f:
         data = json.load(f)
-    
+
     conn = sqlite3.connect('statistics.db')
     c = conn.cursor()
-    
+
     # Check if data is already loaded
     c.execute("SELECT COUNT(*) FROM statistics")
     if c.fetchone()[0] == 0:
@@ -47,15 +47,15 @@ def load_data():
             # Create embedding for search
             text = f"{item['title']} {item['subject']} {item['description']}"
             embedding = model.encode(text)
-            
+
             # Store in database
-            c.execute('''INSERT INTO statistics 
+            c.execute('''INSERT INTO statistics
                         (id, title, subject, description, link, date, teaser_image_url, embedding)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                      (item['id'], item['title'], item['subject'], item['description'],
                       item['link'], item['date'], item['teaser_image_url'],
                       embedding.tobytes()))
-    
+
     conn.commit()
     conn.close()
 
@@ -67,18 +67,18 @@ load_data()
 def create_faiss_index():
     conn = sqlite3.connect('statistics.db')
     c = conn.cursor()
-    
+
     # Get all embeddings
     c.execute("SELECT id, embedding FROM statistics")
     results = c.fetchall()
-    
+
     if not results:
         return None
-    
+
     # Create FAISS index
     dimension = model.get_sentence_embedding_dimension()
     index = faiss.IndexFlatL2(dimension)
-    
+
     # Add vectors to index
     ids = []
     vectors = []
@@ -86,10 +86,10 @@ def create_faiss_index():
         embedding = np.frombuffer(embedding_bytes, dtype=np.float32)
         vectors.append(embedding)
         ids.append(id_)
-    
+
     vectors = np.array(vectors)
     index.add(vectors)
-    
+
     conn.close()
     return index, ids
 
@@ -108,18 +108,18 @@ async def root():
 async def find_statistics(query: SearchQuery):
     if not index:
         raise HTTPException(status_code=500, detail="Search index not initialized")
-    
+
     # Encode query
     query_embedding = model.encode(query.query)
-    
+
     # Search in FAISS index
     k = min(query.limit, len(ids))
     distances, indices = index.search(np.array([query_embedding]), k)
-    
+
     # Get results from database
     conn = sqlite3.connect('statistics.db')
     c = conn.cursor()
-    
+
     results = []
     for idx in indices[0]:
         c.execute("SELECT * FROM statistics WHERE id = ?", (ids[idx],))
@@ -134,7 +134,7 @@ async def find_statistics(query: SearchQuery):
                 "date": result[5],
                 "teaser_image_url": result[6]
             })
-    
+
     conn.close()
     return results
 
@@ -142,18 +142,18 @@ async def find_statistics(query: SearchQuery):
 async def stream_find_statistics(query: SearchQuery):
     if not index:
         raise HTTPException(status_code=500, detail="Search index not initialized")
-    
+
     # Encode query
     query_embedding = model.encode(query.query)
-    
+
     # Search in FAISS index
     k = min(10, len(ids))  # Always return top 10 for streaming
     distances, indices = index.search(np.array([query_embedding]), k)
-    
+
     # Get results from database
     conn = sqlite3.connect('statistics.db')
     c = conn.cursor()
-    
+
     async def generate():
         for idx in indices[0]:
             c.execute("SELECT * FROM statistics WHERE id = ?", (ids[idx],))
@@ -170,10 +170,10 @@ async def stream_find_statistics(query: SearchQuery):
                 }
                 yield f"data: {json.dumps(item)}\n\n"
                 time.sleep(0.1)  # Small delay to demonstrate streaming
-    
+
     conn.close()
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

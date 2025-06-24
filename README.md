@@ -83,4 +83,4 @@ The application expects a `statistics.json` file in the root directory with the 
   2. Load data from statistics.json
   3. Generate embeddings for all entries
   4. Build a FAISS index for efficient search
-- Subsequent runs will use the existing database and index 
+- Subsequent runs will use the existing database and index
