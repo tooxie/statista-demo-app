@@ -76,6 +76,30 @@ The application expects a `statistics.json` file in the root directory with the 
 ]
 ```
 
+## Load Testing
+
+The `loadtesting.py` script simulates, in a very dummy way, concurrent users.
+
+First the test dependencies must be installed:
+```bash
+pip install -r requirements.load.txt
+```
+
+Once the dependencies are installed the script can be invoked as follows:
+```bash
+python loadtesting.py --url <URL_TO_STRESS>
+```
+
+By default it will issue 100 concurrent requests. This can be configured using the `--requests` argument:
+```bash
+python loadtesting.py --url <URL_TO_STRESS> --requests <DESIRED_CONCURRENT_REQUESTS>
+```
+
+Due to time constraints the script has the following limitations that would not be admissible in a real-world scenario:
+* For security reasons it shouldn't allow for any arbitrary URL to be queried, only `localhost`.
+* It is not possible to set a fixed number of concurrent requests, all requests will be issued at once.
+* Most importantly, it's not possible to send body (POST) parameters.
+
 ## Notes
 
 - The first time you run the application, it will:
