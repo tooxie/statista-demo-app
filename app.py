@@ -104,6 +104,41 @@ class SearchQuery(BaseModel):
 async def root():
     return {"message": "Welcome to the Statistics Search API"}
 
+@app.get("/health")
+async def shallow_health():
+    """This is a shallow health check endpoint. It simply makes sure that the
+    app is up and running. Since this is a very cheap operation, kubernetes
+    can hit this endpoint constantly as part of the liveness and readiness
+    probes."""
+
+    return {"message": "OK"}
+
+@app.get("/health/deep")
+async def deep_health():
+    """This is the deep health check endpoint. It should test that all the
+    system's dependencies are reachable and healthy. This not only means
+    pinging the database, but also making sure that the credentials work.
+
+    This is a more expensive endpoint, it should not be queried constantly.
+    Not only it could incur in extra costs but it can affect performance of the
+    overall application if it gets invoked too often. Instead, we should use
+    this as part of the startup probe."""
+
+    try:
+        # Test database connection
+        conn = sqlite3.connect('statistics.db')
+        conn.close()
+
+        # Here we should add all necessary checks. For example if we depend on
+        # an external service, we should make sure that it's reachable and able
+        # to handle our requests.
+    except Exception as e:
+        # For demo purposes we can return the error message, but in production
+        # we should be careful to not leak sensitive information.
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+    return {"message": "OK"}
+
 @app.post("/find")
 async def find_statistics(query: SearchQuery):
     if not index:
